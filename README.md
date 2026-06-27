@@ -274,92 +274,30 @@ codepresso/
 
 ### 아키텍처
 
-프로젝트는 **레이어드 아키텍처 (Layered Architecture)** 패턴을 따릅니다:
+프로젝트는 **JSP 기반 MVC + 레이어드 아키텍처**로 구성되어 있습니다.
 
 ```mermaid
 flowchart LR
-    user["사용자 브라우저"]
+    User[사용자] --> View[JSP View]
+    View --> Security[Spring Security]
+    Security --> Controller[Spring MVC Controller]
+    Controller --> Service[Service Layer]
+    Service --> Repository[Spring Data JPA Repository]
+    Repository --> DB[(MySQL 8.4)]
 
-    subgraph client["View / Client"]
-        jsp["JSP View<br/>WEB-INF/views"]
-        static["Static Resources<br/>CSS · JS · Images"]
-    end
-
-    subgraph app["Spring Boot Application"]
-        security["Spring Security<br/>인증 · 인가 · RBAC"]
-        interceptor["Web MVC Config<br/>Interceptor · View Resolver"]
-
-        subgraph controller["Controller Layer"]
-            viewController["View Controllers<br/>화면 라우팅"]
-            apiController["REST Controllers<br/>도메인 API"]
-        end
-
-        subgraph domain["Service Layer"]
-            authService["Auth / Member"]
-            productService["Product / Review"]
-            cartService["Cart"]
-            orderService["Order / Payment"]
-            couponService["Coupon / Stamp"]
-            boardService["Board / Branch"]
-            asyncService["@Async Tasks<br/>Email · 부가 처리"]
-        end
-
-        converter["Converter Layer<br/>Entity ↔ DTO"]
-        dto["DTO Layer<br/>Request / Response"]
-
-        subgraph persistence["Persistence Layer"]
-            repository["Spring Data JPA Repositories"]
-            entity["JPA Entities<br/>27개 도메인 테이블"]
-        end
-    end
-
-    subgraph infra["Infrastructure"]
-        mysql[("MySQL 8.4<br/>Docker Compose")]
-        uploads["Local Upload Storage<br/>profile · review images"]
-    end
-
-    subgraph external["External Services"]
-        toss["Toss Payments API"]
-        naver["Naver SMTP"]
-    end
-
-    user --> jsp
-    jsp --> static
-    user --> security
-    security --> interceptor
-    interceptor --> viewController
-    interceptor --> apiController
-
-    viewController --> jsp
-    apiController --> dto
-    dto --> converter
-    converter --> domain
-    domain --> converter
-    converter --> dto
-
-    authService --> repository
-    productService --> repository
-    cartService --> repository
-    orderService --> repository
-    couponService --> repository
-    boardService --> repository
-    repository --> entity
-    entity --> mysql
-
-    orderService --> toss
-    asyncService --> naver
-    authService --> asyncService
-    orderService --> asyncService
-    authService --> uploads
-    productService --> uploads
+    Service --> Toss[Toss Payments API]
+    Service --> SMTP[Naver SMTP]
+    Service --> Storage[Local Upload Storage]
 ```
 
-1. **Controller Layer**: HTTP 요청/응답 처리
-2. **Service Layer**: 비즈니스 로직 처리
-3. **Repository Layer**: 데이터베이스 접근
-4. **Entity Layer**: 도메인 모델 (JPA 엔티티)
-5. **DTO Layer**: 계층 간 데이터 전송
-6. **Converter Layer**: Entity와 DTO 간 변환
+1. **View**: JSP와 정적 리소스로 화면을 렌더링합니다.
+2. **Security**: 세션 기반 로그인, Remember-Me, URL 접근 제어를 담당합니다.
+3. **Controller**: 화면 라우팅과 REST API 요청을 처리합니다.
+4. **Service**: 회원, 상품, 장바구니, 주문/결제, 쿠폰, 게시판 등 핵심 비즈니스 로직을 수행합니다.
+5. **Repository**: Spring Data JPA로 MySQL 데이터에 접근합니다.
+6. **External / Storage**: 결제는 Toss Payments, 이메일은 Naver SMTP, 업로드 파일은 로컬 스토리지를 사용합니다.
+
+DTO와 Converter는 Controller, Service, Entity 사이의 데이터 전달과 변환을 분리하기 위해 보조 레이어로 사용했습니다.
 
 
 ## Git 브랜치 전략
