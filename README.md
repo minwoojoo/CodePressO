@@ -276,6 +276,84 @@ codepresso/
 
 프로젝트는 **레이어드 아키텍처 (Layered Architecture)** 패턴을 따릅니다:
 
+```mermaid
+flowchart LR
+    user["사용자 브라우저"]
+
+    subgraph client["View / Client"]
+        jsp["JSP View<br/>WEB-INF/views"]
+        static["Static Resources<br/>CSS · JS · Images"]
+    end
+
+    subgraph app["Spring Boot Application"]
+        security["Spring Security<br/>인증 · 인가 · RBAC"]
+        interceptor["Web MVC Config<br/>Interceptor · View Resolver"]
+
+        subgraph controller["Controller Layer"]
+            viewController["View Controllers<br/>화면 라우팅"]
+            apiController["REST Controllers<br/>도메인 API"]
+        end
+
+        subgraph domain["Service Layer"]
+            authService["Auth / Member"]
+            productService["Product / Review"]
+            cartService["Cart"]
+            orderService["Order / Payment"]
+            couponService["Coupon / Stamp"]
+            boardService["Board / Branch"]
+            asyncService["@Async Tasks<br/>Email · 부가 처리"]
+        end
+
+        converter["Converter Layer<br/>Entity ↔ DTO"]
+        dto["DTO Layer<br/>Request / Response"]
+
+        subgraph persistence["Persistence Layer"]
+            repository["Spring Data JPA Repositories"]
+            entity["JPA Entities<br/>27개 도메인 테이블"]
+        end
+    end
+
+    subgraph infra["Infrastructure"]
+        mysql[("MySQL 8.4<br/>Docker Compose")]
+        uploads["Local Upload Storage<br/>profile · review images"]
+    end
+
+    subgraph external["External Services"]
+        toss["Toss Payments API"]
+        naver["Naver SMTP"]
+    end
+
+    user --> jsp
+    jsp --> static
+    user --> security
+    security --> interceptor
+    interceptor --> viewController
+    interceptor --> apiController
+
+    viewController --> jsp
+    apiController --> dto
+    dto --> converter
+    converter --> domain
+    domain --> converter
+    converter --> dto
+
+    authService --> repository
+    productService --> repository
+    cartService --> repository
+    orderService --> repository
+    couponService --> repository
+    boardService --> repository
+    repository --> entity
+    entity --> mysql
+
+    orderService --> toss
+    asyncService --> naver
+    authService --> asyncService
+    orderService --> asyncService
+    authService --> uploads
+    productService --> uploads
+```
+
 1. **Controller Layer**: HTTP 요청/응답 처리
 2. **Service Layer**: 비즈니스 로직 처리
 3. **Repository Layer**: 데이터베이스 접근
