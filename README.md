@@ -278,8 +278,7 @@ codepresso/
 
 ```mermaid
 flowchart LR
-    User[사용자] --> View[JSP View]
-    View --> Security[Spring Security]
+    User[사용자] --> Security[Spring Security]
     Security --> Controller[Spring MVC Controller]
     Controller --> Service[Service Layer]
     Service --> Repository[Spring Data JPA Repository]
@@ -288,11 +287,14 @@ flowchart LR
     Service --> Toss[Toss Payments API]
     Service --> SMTP[Naver SMTP]
     Service --> Storage[Local Upload Storage]
+
+    Controller --> View[JSP View]
+    View --> User
 ```
 
-1. **View**: JSP와 정적 리소스로 화면을 렌더링합니다.
-2. **Security**: 세션 기반 로그인, Remember-Me, URL 접근 제어를 담당합니다.
-3. **Controller**: 화면 라우팅과 REST API 요청을 처리합니다.
+1. **Security**: 사용자 요청을 먼저 가로채 세션 기반 로그인, Remember-Me, URL 접근 제어를 처리합니다.
+2. **Controller**: 인증/인가를 통과한 화면 라우팅과 REST API 요청을 처리하고, 처리 결과에 따라 JSP View를 반환합니다.
+3. **View**: JSP와 정적 리소스로 서버 처리 결과를 화면에 렌더링합니다.
 4. **Service**: 회원, 상품, 장바구니, 주문/결제, 쿠폰, 게시판 등 핵심 비즈니스 로직을 수행합니다.
 5. **Repository**: Spring Data JPA로 MySQL 데이터에 접근합니다.
 6. **External / Storage**: 결제는 Toss Payments, 이메일은 Naver SMTP, 업로드 파일은 로컬 스토리지를 사용합니다.
