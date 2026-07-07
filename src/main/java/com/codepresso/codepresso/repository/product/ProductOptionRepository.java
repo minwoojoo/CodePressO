@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface ProductOptionRepository extends JpaRepository<ProductOption, Long> {
@@ -16,4 +17,11 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
             "LEFT JOIN FETCH os.optionName " +
             "WHERE p.product.id = :productId")
     List<ProductOption> findOptionByProductId(@Param("productId") Long productId);
+
+    @Query("SELECT p FROM ProductOption p " +
+            "JOIN FETCH p.product " +
+            "LEFT JOIN FETCH p.optionStyle os " +
+            "LEFT JOIN FETCH os.optionName " +
+            "WHERE p.id IN :optionIds")
+    List<ProductOption> findAllWithProductByIdIn(@Param("optionIds") Set<Long> optionIds);
 }

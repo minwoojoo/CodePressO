@@ -3,7 +3,7 @@
 <body>
 <%@ include file="/WEB-INF/views/common/header.jspf" %>
 
-<main class="hero payment-success-page">
+<main class="hero  지거payment-success-page">
     <div class="container">
         <div class="success-card">
             <h1>결제 성공!</h1>
