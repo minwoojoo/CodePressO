@@ -29,15 +29,28 @@ public class StampService {
      * */
     @Transactional
     public void earnStampsFromOrder(Long memberId, List<OrdersDetail> ordersDetails) {
+        int totalEarnedStamps = 0;
+        for (OrdersDetail ordersDetail : ordersDetails) {
+            if (ordersDetail.getQuantity() != null) {
+                totalEarnedStamps += ordersDetail.getQuantity();
+            }
+        }
+
+        earnStampsFromOrder(memberId, totalEarnedStamps);
+    }
+
+    /**
+     * 주문으로부터 계산된 스탬프 수 적립
+     * */
+    @Transactional
+    public void earnStampsFromOrder(Long memberId, int totalEarnedStamps) {
+        if (totalEarnedStamps <= 0) {
+            return;
+        }
+
         // 1.회원 조회
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
-
-        // 2. 적립할 스탬프 수 계산
-        int totalEarnedStamps = 0;
-        for (OrdersDetail ordersDetail : ordersDetails) {
-            totalEarnedStamps += ordersDetail.getQuantity();
-        }
 
         // 기존 스탬프 찾기
         Optional<Stamp> existingStamp = stampRepository.findByMember(member);

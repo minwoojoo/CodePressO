@@ -10,6 +10,7 @@ import com.codepresso.codepresso.dto.payment.TossPaymentSuccessResponse;
 import com.codepresso.codepresso.dto.product.ProductDetailResponse;
 import com.codepresso.codepresso.dto.product.ProductOptionDTO;
 import com.codepresso.codepresso.entity.branch.Branch;
+import com.codepresso.codepresso.event.OrderStampEarnedEvent;
 import com.codepresso.codepresso.entity.member.Member;
 import com.codepresso.codepresso.entity.order.Orders;
 import com.codepresso.codepresso.entity.order.OrdersDetail;
@@ -18,8 +19,8 @@ import com.codepresso.codepresso.repository.member.MemberRepository;
 import com.codepresso.codepresso.repository.order.OrdersRepository;
 import com.codepresso.codepresso.service.cart.CartService;
 import com.codepresso.codepresso.service.coupon.CouponService;
-import com.codepresso.codepresso.service.coupon.StampService;
 import com.codepresso.codepresso.service.product.ProductService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,8 +43,8 @@ public class PaymentService {
     private final CartService cartService;
     private final ProductService productService;
     private final CouponService couponService;
-    private final StampService stampService;
     private final OrderCreationService orderCreationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 장바구니 결제페이지 데이터 준비
@@ -272,11 +273,14 @@ public class PaymentService {
             }
         }
 
-        // stamp 적립
-        try{
-            stampService.earnStampsFromOrder(member.getId(), ordersDetails);
-        }catch(Exception e){
-            e.printStackTrace();
+        // 스탬프 적립은 주문 트랜잭션 커밋 이후 비동기로 처리
+        int earnedStampCount = ordersDetails.stream()
+                .map(OrdersDetail::getQuantity)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+        if (earnedStampCount > 0) {
+            eventPublisher.publishEvent(new OrderStampEarnedEvent(member.getId(), earnedStampCount));
         }
 
         return TossPaymentSuccessResponse.builder()
