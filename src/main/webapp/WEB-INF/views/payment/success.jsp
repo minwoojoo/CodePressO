@@ -121,9 +121,6 @@
 
             // 주문 상세 페이지로 리다이렉트
             if (result.orderId) {
-                // 세션 스토리지에 주문 상세 정보 저장
-                sessionStorage.setItem('orderDetailData', JSON.stringify(result));
-                
                 // 리다이렉트 메시지 표시
                 const redirectMessage = document.getElementById('redirectMessage');
                 if (redirectMessage) {

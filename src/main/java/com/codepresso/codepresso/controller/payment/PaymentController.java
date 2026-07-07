@@ -3,6 +3,7 @@ package com.codepresso.codepresso.controller.payment;
 import com.codepresso.codepresso.dto.payment.CheckoutRequest;
 import com.codepresso.codepresso.dto.payment.CheckoutResponse;
 import com.codepresso.codepresso.dto.payment.TossPaymentSuccessRequest;
+import com.codepresso.codepresso.dto.payment.TossPaymentSuccessResponse;
 import com.codepresso.codepresso.security.LoginUser;
 import com.codepresso.codepresso.service.payment.PaymentService;
 import jakarta.validation.Valid;
@@ -57,13 +58,13 @@ public class PaymentController {
      * POST /api/payments/toss-success
      */
     @PostMapping("/toss-success")
-    public ResponseEntity<CheckoutResponse> processTossPaymentSuccess(
+    public ResponseEntity<TossPaymentSuccessResponse> processTossPaymentSuccess(
             @AuthenticationPrincipal LoginUser loginUser,
             @RequestBody @Valid TossPaymentSuccessRequest request) {
         try {
             request.setMemberId(loginUser.getMemberId());
 
-            CheckoutResponse response = paymentService.processTossPaymentSuccess(request);
+            TossPaymentSuccessResponse response = paymentService.processTossPaymentSuccess(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             throw new IllegalArgumentException("토스페이먼츠 결제 성공 처리 중 오류가 발생했습니다: " + e.getMessage());

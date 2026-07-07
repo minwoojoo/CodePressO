@@ -6,13 +6,13 @@ import com.codepresso.codepresso.dto.cart.CartResponse;
 import com.codepresso.codepresso.dto.payment.CheckoutRequest;
 import com.codepresso.codepresso.dto.payment.CheckoutResponse;
 import com.codepresso.codepresso.dto.payment.TossPaymentSuccessRequest;
+import com.codepresso.codepresso.dto.payment.TossPaymentSuccessResponse;
 import com.codepresso.codepresso.dto.product.ProductDetailResponse;
 import com.codepresso.codepresso.dto.product.ProductOptionDTO;
 import com.codepresso.codepresso.entity.branch.Branch;
 import com.codepresso.codepresso.entity.member.Member;
 import com.codepresso.codepresso.entity.order.Orders;
 import com.codepresso.codepresso.entity.order.OrdersDetail;
-import com.codepresso.codepresso.entity.order.OrdersItemOptions;
 import com.codepresso.codepresso.repository.branch.BranchRepository;
 import com.codepresso.codepresso.repository.member.MemberRepository;
 import com.codepresso.codepresso.repository.order.OrdersRepository;
@@ -223,7 +223,7 @@ public class PaymentService {
      * 토스페이먼츠 결제 성공 시 주문 생성
      */
     @Transactional
-    public CheckoutResponse processTossPaymentSuccess(TossPaymentSuccessRequest request) {
+    public TossPaymentSuccessResponse processTossPaymentSuccess(TossPaymentSuccessRequest request) {
         // 1. 회원 및 지점 정보 조회
         Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
@@ -279,8 +279,12 @@ public class PaymentService {
             e.printStackTrace();
         }
 
-        // 5. 응답 데이터 생성
-        return buildCheckoutResponse(savedOrder);
+        return TossPaymentSuccessResponse.builder()
+                .orderId(savedOrder.getId())
+                .productionStatus(savedOrder.getProductionStatus())
+                .orderDate(savedOrder.getOrderDate())
+                .finalAmount(savedOrder.getFinalAmount())
+                .build();
     }
 
     private Orders createTossOrder(TossPaymentSuccessRequest request, Member member, Branch branch) {
@@ -330,51 +334,4 @@ public class PaymentService {
                 .build();
     }
 
-    private CheckoutResponse buildCheckoutResponse(Orders orders) {
-        Orders fetchedOrders = ordersRepository.findByIdWithDetails(orders.getId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
-
-        // 주문 상세 정보 리스트 생성
-        List<CheckoutResponse.OrderItem> orderItems = new ArrayList<>();
-
-        // 각 주문 상세를 OrderItem으로 변환
-        for (OrdersDetail detail : fetchedOrders.getOrdersDetails()) {
-            // 옵션 이름들 수집
-            List<String> optionNames = new ArrayList<>();
-            if (detail.getOptions() != null) {
-                for (OrdersItemOptions option : detail.getOptions()) {
-                    optionNames.add(option.getOption().getOptionStyle().getOptionName().getOptionName());
-                }
-            }
-
-            // OrderItem 생성
-            CheckoutResponse.OrderItem orderItem = CheckoutResponse.OrderItem.builder()
-                    .orderDetailId(detail.getId())
-                    .productName(detail.getProduct().getProductName())
-                    .quantity(detail.getQuantity() != null ? detail.getQuantity() : 1)
-                    .price(detail.getPrice())
-                    .optionNames(optionNames)
-                    .build();
-
-            orderItems.add(orderItem);
-        }
-
-        // 총 주문 금액 계산
-        int totalAmount = 0;
-        for (OrdersDetail detail : fetchedOrders.getOrdersDetails()) {
-            totalAmount += detail.getPrice();
-        }
-
-        // 최종 응답 객체 생성
-        return CheckoutResponse.builder()
-                .orderId(fetchedOrders.getId())
-                .productionStatus(fetchedOrders.getProductionStatus())
-                .orderDate(fetchedOrders.getOrderDate())
-                .pickupTime(fetchedOrders.getPickupTime())
-                .isTakeout(fetchedOrders.getIsTakeout())
-                .requestNote(fetchedOrders.getRequestNote())
-                .totalAmount(totalAmount)
-                .orderItems(orderItems)
-                .build();
-    }
 }
